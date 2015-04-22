@@ -108,7 +108,9 @@ angular.module('dashboardJsApp')
 
         return deferred.promise;
       },
+      createTask: function(task) {
 
+      },
       taskForm: function(taskId, callback) {
         var cb = callback || angular.noop;
         var deferred = $q.defer();

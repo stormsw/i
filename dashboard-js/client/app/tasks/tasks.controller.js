@@ -1,5 +1,4 @@
 'use strict';
-
 angular.module('dashboardJsApp')
   .controller('TasksCtrl', function($scope, ngDialog, tasks) {
 
@@ -42,6 +41,8 @@ angular.module('dashboardJsApp')
 
     $scope.openCreateTaskForm = function () {
       ngDialog.open({
-        template: 'app/tasks/directives/create.task.html'});
+        template: 'app/tasks/createtask/create.task.html',
+        controller: 'CreateTasksCtrl'
+      });
     };
   });
