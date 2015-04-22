@@ -5,6 +5,7 @@ angular.module('dashboardJsApp', [
     'ngResource',
     'ngSanitize',
     'ngRoute',
+    'ngDialog',
     'ngIdle',
     'ui.bootstrap',
     'angularMoment'

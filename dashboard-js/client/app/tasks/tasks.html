@@ -1,12 +1,16 @@
 <div ng-include="'components/navbar/navbar.html'"></div>
 
 <div class="container">
-	<div class="row">
-		<div class="col-xs-3 col-sm-3 col-md-3 col-lg-3">
-      <ul class="nav nav-tabs nav-stacked col-md-4_ col-lg-4_ col-sm-6_" ng-repeat="task in tasks">
+  <div class="row">
+    <div class="col-xs-3 col-sm-3 col-md-3 col-lg-3">
+      <ul class="nav nav-tabs nav-stacked col-md-4_ col-lg-4_ col-sm-6_"
+          ng-repeat="task in tasks">
         <li><a href="#" tooltip="{{task.description}}" ng-click="selectTask(task.id)">{{ task.name }}</a></li>
       </ul>
-		</div>
+      <button type="submit"
+              ng-click="openCreateTaskForm()"
+              class="btn btn-primary">Нова Задача</button>
+    </div>
 
     <div class="col-xs-6 col-sm-6 col-md-6 col-lg-6">
       <h3 ng-show="taskForm == null && !error">Завантаження ...</h3>
@@ -21,32 +25,35 @@
 
         <p ng-if="item.type == 'enum'">
           <label>{{item.name}}</label>
-          <select class="form-control" ng-model="item.value" ng-options="oEnumValue.id as oEnumValue.name for oEnumValue in item.enumValues" ng-required="item.required" ng-disabled="!item.writable"></select>  
+          <select class="form-control" ng-model="item.value"
+                  ng-options="oEnumValue.id as oEnumValue.name for oEnumValue in item.enumValues"
+                  ng-required="item.required" ng-disabled="!item.writable"></select>
         </p>
 
         <!-- <div ng-if="item.type != 'string' && item.type != 'long' && item.type != 'date' && item.type != 'enum'">{{item}}</div> -->
       </div>
+
       <p>
         <button ng-hide="taskForm == null" class="btn btn-success">Опрацювати</button>
       </p>
     </div>
 
-    <div class="col-xs-3 col-sm-3 col-md-3 col-lg-3">	
-    	<h4>Події</h4>	
+    <div class="col-xs-3 col-sm-3 col-md-3 col-lg-3">
+      <h4>Події</h4>
 
-			<form class="form-inline" action="" method="post" role="form">
-				<div class="form-group">
-					<label for=""></label>
-					<input type="text" class="form-control" name="" id="" >
-				</div>
-				<button type="submit" class="btn btn-primary">Створити</button>
-			</form>
-		
+      <form class="form-inline" action="" method="post" role="form">
+        <div class="form-group">
+          <label for=""></label>
+          <input type="text" class="form-control" name="" id="">
+        </div>
+        <button type="submit" class="btn btn-primary">Створити</button>
+      </form>
+
       <ul class="media-list">
         <li class="media" ng-repeat="event in events">
           <task-event event="event"></task-event>
         </li>
       </ul>
     </div>
-	</div>
+  </div>
 </div>

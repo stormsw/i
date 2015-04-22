@@ -1,0 +1,61 @@
+<form id="target"
+      class="form-horizontal">
+  <fieldset>
+
+    <legend>Нова задача</legend>
+
+    <div class="form-group">
+      <label class="col-md-4 control-label"
+             for="nameInput">Назва</label>
+
+      <div class="col-md-8">
+        <input id="nameInput"
+               name="nameInput"
+               type="text"
+               placeholder=""
+               class="form-control input-md"
+               required="">
+
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label class="col-md-4 control-label"
+             for="descriptionArea">Опис</label>
+
+      <div class="col-md-8">
+          <textarea class="form-control"
+                    id="descriptionArea"
+                    name="descriptionArea"></textarea>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label class="col-md-4 control-label"
+             for="dateInput">Термін дії</label>
+
+      <div class="col-md-8">
+        <select id="dateInput"
+                name="dateInput"
+                class="form-control">
+          <option value="">27/04/2015</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label class="col-md-4 control-label"
+             for="prioritySelect">Пріорітет</label>
+
+      <div class="col-md-8">
+        <select id="prioritySelect"
+                name="prioritySelect"
+                class="form-control">
+          <option value="1">Низький пріорітет</option>
+          <option value="2">Середній пріорітет</option>
+          <option value="3">Високий пріорітет</option>
+        </select>
+      </div>
+    </div>
+  </fieldset>
+</form>
