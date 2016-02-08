@@ -1,5 +1,6 @@
 'use strict';
 
+//angular.module('dashboardJsApp').factory('PrintTemplateProcessor', ['$sce', 'Auth', '$filter', 'FieldMotionService', '$lunaService', function ($sce, Auth, $filter, FieldMotionService, lunaService) {
 angular.module('dashboardJsApp').factory('PrintTemplateProcessor', ['$sce', 'Auth', '$filter', 'FieldMotionService', function ($sce, Auth, $filter, FieldMotionService) {
   function processMotion(printTemplate, form, fieldGetter) {
     var formData = form.reduce(function(prev, curr) {
@@ -73,14 +74,47 @@ angular.module('dashboardJsApp').factory('PrintTemplateProcessor', ['$sce', 'Aut
           var enumItem = item.enumValues.filter(function (enumObj) {
             return enumObj.id === enumID;
           })[0];
-          if (enumItem) {
-            return enumItem.name;
+          if (enumItem && enumItem.name) {
+            var enumItemName = enumItem.name;
+            var enumItemNameArray = enumItemName.split('|');
+            if (!_.isEmpty(enumItemNameArray[1])) {
+              return enumItemNameArray[1];
+            }
+            else {
+              return enumItemNameArray[0];
+            }
           }
         }
         else {
           return item.value;
         }
       }
+
+
+        function getLunaValue(id) {
+
+          // Number 2187501 must give CRC=3
+          // Check: http://planetcalc.ru/2464/
+          if(id===null || id === 0){
+            return null;
+          }
+          var n = parseInt(id);
+          var nFactor = 1;
+          var nCRC = 0;
+          var nAddend;
+
+          while (n !== 0) {
+            nAddend = Math.round(nFactor * (n % 10));
+            nFactor = (nFactor === 2) ? 1 : 2;
+            nAddend = nAddend > 9 ? nAddend - 9 : nAddend;
+            nCRC += nAddend;
+            n = parseInt(n / 10);
+          }
+
+          nCRC = nCRC % 10;
+          return nCRC;
+        }
+
       var printTemplate = this.processPrintTemplate(task, form, originalPrintTemplate, /(\[(\w+)])/g, fieldGetter);
       // What is this for? // Sergey P
       printTemplate = this.processPrintTemplate(task, form, printTemplate, /(\[label=(\w+)])/g, function (item) {
@@ -91,6 +125,27 @@ angular.module('dashboardJsApp').factory('PrintTemplateProcessor', ['$sce', 'Aut
         return user.lastName + ' ' + user.firstName ;
       });
       printTemplate = this.populateSystemTag(printTemplate, "[sDateCreate]", $filter('date')(task.createTime, 'yyyy-MM-dd HH:mm'));
+
+      //№{{task.processInstanceId}}{{lunaService.getLunaValue(task.processInstanceId)}}
+      //$scope.lunaService = lunaService;
+      //lunaService.getLunaValue(
+      printTemplate = this.populateSystemTag(printTemplate, "[sID_Order]", task.processInstanceId+getLunaValue(task.processInstanceId)+"");
+
+      // #998 реализовать поддержку системного тэга [sDateTimeCreateProcess], [sDateCreateProcess] и [sTimeCreateProcess]
+      // в принтформе, вместо которого будет подставляться Дата создания процесса
+      // (в формате "YYYY-MM-DD hh:mm", "YYYY-MM-DD" и "hh:mm")
+      if (angular.isDefined(form.taskData)) {
+        printTemplate = this.populateSystemTag(printTemplate, "[sDateTimeCreateProcess]", function () {
+            return $filter('date')(new Date(form.taskData.sDateCreate), 'yyyy-MM-dd HH:mm');
+        });
+        printTemplate = this.populateSystemTag(printTemplate, "[sDateCreateProcess]", function () {
+            return $filter('date')(new Date(form.taskData.sDateCreate), 'yyyy-MM-dd');
+        });
+        printTemplate = this.populateSystemTag(printTemplate, "[sTimeCreateProcess]", function () {
+            return $filter('date')(new Date(form.taskData.sDateCreate), 'HH:mm');
+        });
+      }
+
       return $sce.trustAsHtml(processMotion(printTemplate, form, fieldGetter));
     }
   }

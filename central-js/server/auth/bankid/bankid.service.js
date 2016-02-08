@@ -2,22 +2,11 @@ var request = require('request');
 var FormData = require('form-data');
 var async = require('async');
 var _ = require('lodash');
-var config = require('../../config/environment/index');
+var config = require('../../config/environment');
 var syncSubject = require('../../api/service/syncSubject.service.js');
 var Admin = require('../../components/admin/index');
 var url = require('url');
-
-var getResourceServiceURL = function (pathname) {
-  return url.format({
-    protocol: config.bankid.sProtocol_ResourceService_BankID,
-    hostname: config.bankid.sHost_ResourceService_BankID,
-    pathname: '/ResourceService' + pathname
-  });
-};
-
-var getAuth = function (accessToken) {
-  return 'Bearer ' + accessToken + ', Id ' + config.bankid.client_id;
-};
+var bankidUtil = require('./bankid.util.js');
 
 var createError = function (error, error_description, response) {
   return {
@@ -29,8 +18,17 @@ var createError = function (error, error_description, response) {
   };
 };
 
+var decryptCallback = function (callback) {
+  return function (error, response, body) {
+    if (config.bankid.enableCipher && body && body.customer && body.customer.signature) {
+      bankidUtil.decryptData(body.customer);
+    }
+    callback(error, response, body);
+  }
+};
+
 module.exports.index = function (accessToken, callback) {
-  var url = getResourceServiceURL('/checked/data');
+  var url = bankidUtil.getInfoURL(config);
 
   var adminCheckCallback = function (error, response, body) {
     if (body.customer && Admin.isAdminInn(body.customer.inn)) {
@@ -46,7 +44,7 @@ module.exports.index = function (accessToken, callback) {
     'url': url,
     'headers': {
       'Content-Type': 'application/json',
-      'Authorization': getAuth(accessToken),
+      'Authorization': bankidUtil.getAuth(accessToken),
       'Accept': 'application/json'
     },
     json: true,
@@ -78,16 +76,16 @@ module.exports.index = function (accessToken, callback) {
         "fields": ["link", "dateCreate", "extension"]
       }]
     }
-  }, adminCheckCallback);
+  }, decryptCallback(adminCheckCallback));
 };
 
 module.exports.scansRequest = function (accessToken, callback) {
-  var url = getResourceServiceURL('/checked/data');
+  var url = bankidUtil.getInfoURL();
   return request.post({
     'url': url,
     'headers': {
       'Content-Type': 'application/json',
-      'Authorization': getAuth(accessToken),
+      'Authorization': bankidUtil.getAuth(accessToken),
       'Accept': 'application/json'
     },
     json: true,
@@ -102,14 +100,14 @@ module.exports.scansRequest = function (accessToken, callback) {
         "fields": ["link", "dateCreate", "extension"]
       }]
     }
-  }, callback);
+  }, decryptCallback(callback));
 };
 
 module.exports.prepareScanContentRequest = function (documentScanLink, accessToken) {
   var o = {
     'url': documentScanLink,
     'headers': {
-      'Authorization': getAuth(accessToken)
+      'Authorization': bankidUtil.getAuth(accessToken)
     }
   };
   return request.get(o);
@@ -154,11 +152,13 @@ module.exports.syncWithSubject = function (accessToken, done) {
  * В результате ответа будет получен JSON вида
  * {"state":"ok","code":"000000","desc":"https://{IP:port}/IdentDigitalSignature/signPdf?sidBi=sidBi_value"}
  *
- * @param options
+ * @param accessToken
+ * @param acceptKeyUrl
+ * @param formToUpload
  * @param callback
  */
 module.exports.signHtmlForm = function (accessToken, acceptKeyUrl, formToUpload, callback) {
-  var uploadURL = getResourceServiceURL('/checked/uploadFileForSignature');
+  var uploadURL = bankidUtil.getUploadFileForSignatureURL();
 
   var form = new FormData();
   form.append('file', formToUpload, {
@@ -168,7 +168,7 @@ module.exports.signHtmlForm = function (accessToken, acceptKeyUrl, formToUpload,
   var requestOptionsForUploadContent = {
     url: uploadURL,
     headers: _.merge({
-      Authorization: getAuth(accessToken),
+      Authorization: bankidUtil.getAuth(accessToken),
       acceptKeyUrl: acceptKeyUrl,
       fileType: 'html'
     }, form.getHeaders()),
@@ -179,7 +179,9 @@ module.exports.signHtmlForm = function (accessToken, acceptKeyUrl, formToUpload,
   };
 
   request.post(requestOptionsForUploadContent, function (error, response, body) {
-    if (error || (error = body.error)) {
+    if (!body)
+      callback('Unable to sign a file. bankid.privatbank.ua return an empty response', null);
+    else if (error || (error = body.error)) {
       callback(error, null);
     } else {
       callback(null, body);
@@ -191,11 +193,10 @@ module.exports.signHtmlForm = function (accessToken, acceptKeyUrl, formToUpload,
  * После отработки п.3 (подписание), BankID делает редирект на https://{PI:port}/URL_callback?code=code_value с передачей
  * параметра авторизационного ключа code, тем самым заканчивая фазу п.4.
  * https://{PI:port}/ResourceService/checked/claim/code_value/clientPdfClaim
- * @param req
- * @param res
+ * @param accessToken
+ * @param codeValue
  */
 module.exports.prepareSignedContentRequest = function (accessToken, codeValue) {
-  var url = getResourceServiceURL('/checked/claim/' + codeValue + '/clientPdfClaim');
-  return module.exports.prepareScanContentRequest(url, accessToken);
+  return module.exports.prepareScanContentRequest(bankidUtil.getClientPdfClaim(codeValue), accessToken);
 };
 

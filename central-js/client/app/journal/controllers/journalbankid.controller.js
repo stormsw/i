@@ -18,6 +18,10 @@ angular.module('journal').controller('JournalBankIdController', function ($rootS
     $window.location.href = './auth/eds?link=' + redirectURI;
   };
 
+  $scope.loginWithEmail = function () {
+    $state.go('index.auth.email.verify');
+  };
+
   $scope.loginWithSoccard = function () {
     var stateForRedirect = $state.href('index.journal.bankid', {error: ''});
     var redirectURI = $location.protocol() +
@@ -29,8 +33,19 @@ angular.module('journal').controller('JournalBankIdController', function ($rootS
 
   if ($state.is('index.journal.bankid')) {
     if ($state.params.error) {
-      if ($state.params.error) {
-        var errorText;
+        
+        var oFuncNote = {sHead:"Журнал", sFunc:"JournalBankIdController"};
+        ErrorsFactory.init(oFuncNote, {asParam:['$state.params.error: '+$state.params.error]});
+
+        var sErrorText = $state.params.error;
+        try {
+          sErrorText = JSON.parse($state.params.error).error;
+          ErrorsFactory.addFail({sBody:'Помилка контролера!',asParam:['sErrorText: '+sErrorText]});
+        } catch (sError) {
+          ErrorsFactory.addFail({sBody:'Помилка парсінгу помилки контролера!',sError:sError});
+        }
+          
+        /*var errorText;
         try {
           errorText = JSON.parse($state.params.error).error;
         } catch (error) {
@@ -40,10 +55,9 @@ angular.module('journal').controller('JournalBankIdController', function ($rootS
         ErrorsFactory.push({
           type: "danger",
           text:  errorText
-        });
+        });*/
 
         $state.go('index.journal', {});
-      }
     } else {
       BankIDService.isLoggedIn().then(function () {
         return $state.go('index.journal.content');

@@ -2,7 +2,7 @@ var request = require('request');
 var async = require('async');
 var soccardUtil = require('./soccard.util');
 var config = require('../../config/environment');
-var errors = require('../../components/errors');
+var syncSubject = require('../../api/service/syncSubject.service.js');
 
 module.exports.getUser = function (accessToken, callback) {
   var infoURL = soccardUtil.getInfoURL(config);
@@ -24,9 +24,16 @@ module.exports.getUser = function (accessToken, callback) {
 
   request.get({
     url: infoURL,
-    headers: headers
+    headers: headers,
+    json:true
   }, function (error, response, body) {
-    callback(error, response, body);
+    if (error || body.error) {
+      callback(createError(error || body.error, body.error_description, response), null);
+    } else {
+      callback(null, {
+        customer: body
+      });
+    }
   });
 
 };
@@ -34,18 +41,12 @@ module.exports.getUser = function (accessToken, callback) {
 module.exports.syncWithSubject = function (accessToken, done) {
   async.waterfall([
       function (callback) {
-        module.exports.getUser(accessToken, function (error, response, body) {
-          if (error || body.error) {
-            callback(createError(error || body.error, body.error_description, response), null);
-          } else {
-            callback(null, {
-              customer: body
-            });
-          }
+        module.exports.getUser(accessToken, function (error, result) {
+          callback(error, result);
         });
       },
       function (result, callback) {
-        syncSubject.index(result.customer.personNumber, function (error, response, body) {
+        syncSubject.sync(result.customer.personNumber, function (error, response, body) {
           if (error) {
             callback(createError(error, response), null);
           } else {
